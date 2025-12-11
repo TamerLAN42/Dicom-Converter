@@ -1,11 +1,6 @@
-# ReportLab library for PDF generation
-reportlab
-
-# Pillow library for image processing
-Pillow
-
-# NumPy library for numerical operations
-numpy
-
-# PyDicom library for DICOM file handling
-pydicom
+Flask==2.3.3
+Werkzeug==2.3.7
+pydicom==2.4.3
+Pillow==10.0.0
+numpy==1.24.3
+reportlab==4.0.4

@@ -44,7 +44,7 @@ pip install -r requirements.txt
 2. Run the script:
 
 ```bash
-python main.py
+python app.py
 ```
 
 3. Follow the prompts to convert DICOM images to PDF.

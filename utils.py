@@ -2,54 +2,101 @@ import os
 import numpy as np
 import pydicom
 from PIL import Image
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 
 
-def convert_images_to_pdf(jpg_filenames, pdf_output_directory="", pdf_filename='output.pdf', page_width=letter[0], page_height=letter[1]):
+def convert_dicom_metadata_to_txt(dcm_filename, output_directory):
     """
-    Convert a list of JPEG images to a PDF document.
+    Извлекает метаданные из DICOM-отчёта и сохраняет в TXT.
+    """
+    try:
+        dcm_data = pydicom.dcmread(dcm_filename, force=True)
+    except:
+        return None
+
+    # Создаём текстовый файл
+    base_name = os.path.basename(dcm_filename)
+    if '.' in base_name:
+        base_name = base_name.rsplit('.', 1)[0]
+
+    txt_filename = os.path.join(output_directory, f"{base_name}_meta.txt")
+
+    with open(txt_filename, 'w', encoding='utf-8') as f:
+        f.write(f"=== DICOM Metadata: {os.path.basename(dcm_filename)} ===\n\n")
+
+        # Основные поля
+        fields_to_extract = [
+            'PatientName', 'PatientID', 'StudyDate', 'Modality',
+            'StudyDescription', 'SeriesDescription', 'SOPClassUID'
+        ]
+
+        for field in fields_to_extract:
+            if hasattr(dcm_data, field):
+                f.write(f"{field}: {getattr(dcm_data, field)}\n")
+
+        f.write("\n--- Все доступные поля ---\n")
+
+        # Все остальные поля (кроме пиксельных данных)
+        for elem in dcm_data:
+            if hasattr(elem, 'name') and hasattr(elem, 'value'):
+                # Пропускаем большие бинарные поля
+                if elem.name not in ['Pixel Data', 'Float Pixel Data',
+                                     'Double Float Pixel Data']:
+                    try:
+                        f.write(f"{elem.name}: {elem.value}\n")
+                    except:
+                        f.write(f"{elem.name}: [binary data]\n")
+
+    return txt_filename
+
+def convert_dcm_to_gif(dcm_data, dcm_filename, output_directory,
+                       contrast_factor=1.0, brightness_factor=1.0,
+                       duration=200, loop=0):
+    """
+    Создаёт анимированный GIF из всех слоёв 3D DICOM.
 
     Args:
-        jpg_filenames (list): List of JPEG image filenames.
-        pdf_filename (str, optional): Output PDF filename. If None, PDF will not be generated.
-        page_width (float): Width of the PDF page.
-        page_height (float): Height of the PDF page.
-    """
-
-    pdf_path = os.path.join(pdf_output_directory, pdf_filename)
-    
-    c = canvas.Canvas(pdf_path, pagesize=letter)
-
-    for jpg_filename in jpg_filenames:
-        img = Image.open(jpg_filename)
-        width_ratio = page_width / img.width
-        height = img.height * width_ratio
-        os.makedirs(pdf_output_directory, exist_ok=True)
-        c.drawImage(jpg_filename, 0, 0, width=page_width, height=height)
-        c.showPage()
-
-    if pdf_path:
-        c.save()
-
-
-def get_dcm_filenames(directory):
-    """
-    Retrieve filenames of DICOM files from a directory.
-
-    Args:
-        directory (str): Path to the directory containing DICOM files.
+        dcm_filename: путь к DICOM файлу
+        output_directory: папка для сохранения
+        contrast_factor: контрастность
+        brightness_factor: яркость
+        duration: длительность кадра в мс
+        loop: количество повторов (0 = бесконечно)
 
     Returns:
-        list: Filenames of DICOM files.
+        str: путь к созданному GIF файлу
     """
-    dcm_filenames = []
-    for root, _, filenames in os.walk(directory):
-        for filename in filenames:
-            _, ext = os.path.splitext(filename)
-            if ext.lower() == '.dcm':
-                dcm_filenames.append(os.path.join(root, filename))
-    return dcm_filenames
+    pixel_array = dcm_data.pixel_array.astype(float)
+    layers = pixel_array.shape[0]
+
+    frames = []
+    for layer_idx in range(layers):
+        # Обрабатываем каждый слой
+        layer = pixel_array[layer_idx]
+        layer = layer * contrast_factor + brightness_factor
+        layer = np.clip(layer, 0, 255)
+        layer = (layer / np.max(layer)) * 255
+
+        img = Image.fromarray(np.uint8(layer))
+        frames.append(img)
+
+    # Сохраняем GIF
+    os.makedirs(output_directory, exist_ok=True)
+    base_name = os.path.basename(dcm_filename)
+    if '.' in base_name:
+        base_name = base_name.rsplit('.', 1)[0]
+
+    gif_path = os.path.join(output_directory, f"{base_name}.gif")
+
+    frames[0].save(
+        gif_path,
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration,
+        loop=loop,
+        optimize=True
+    )
+
+    return gif_path
 
 
 def convert_dcm_to_jpg(dcm_filename, output_directory, contrast_factor=1.0, brightness_factor=1.0):
@@ -65,8 +112,24 @@ def convert_dcm_to_jpg(dcm_filename, output_directory, contrast_factor=1.0, brig
     Returns:
         str: Filename of the converted JPEG image.
     """
-    dcm_data = pydicom.dcmread(dcm_filename)
+    try:
+        dcm_data = pydicom.dcmread(dcm_filename)
+    finally:
+        if hasattr(dcm_data, 'fileobj') and dcm_data.fileobj:
+            dcm_data.fileobj.close()
+    # Если не изображение - извлекаем метаданные
+    if not hasattr(dcm_data, 'pixel_array'):
+        return convert_dicom_metadata_to_txt(dcm_filename, output_directory)
+
     pixel_array = dcm_data.pixel_array.astype(float)
+    # Если 3d - все слои объединяем в .gif
+    if len(pixel_array.shape) == 3:
+        return convert_dcm_to_gif(
+            dcm_data, dcm_filename,
+            output_directory,
+            contrast_factor, brightness_factor
+        )
+
 
     # Adjust contrast and brightness
     pixel_array = pixel_array * contrast_factor + brightness_factor
@@ -82,7 +145,7 @@ def convert_dcm_to_jpg(dcm_filename, output_directory, contrast_factor=1.0, brig
     os.makedirs(output_directory, exist_ok=True)
 
     # Save JPEG file
-    jpg_filename = os.path.join(output_directory, os.path.basename(
-        dcm_filename).replace('.dcm', '.jpg'))
+    base_name = os.path.basename(dcm_filename) + '.jpg'
+    jpg_filename = os.path.join(output_directory, base_name)
     image.save(jpg_filename)
     return jpg_filename
