@@ -56,7 +56,7 @@
     <h1>✅ Конвертация завершена!</h1>
 
     {% if files %}
-        <p>Конвертировано файлов: {{ files|length }}</p>
+        <p>Конвертировано файлов: {{ files|length }}, все расположены в папке outputs рядом с .exe файлом</p>
 
         <div class="file-grid">
         {% for file in files %}
@@ -122,15 +122,6 @@
                    style="color: #3498db; text-decoration: none; margin: 0 10px;">
                     <span style="font-size: 18px;">🐙</span> GitHub
                 </a>
-                <span style="color: #7f8c8d;">•</span>
-                <span style="color: #bdc3c7;">
-                    Forked from
-                    <a href="https://github.com/drLacheheb/Dicom-Converter"
-                       target="_blank"
-                       style="color: #e74c3c; text-decoration: none; font-weight: 700;">
-                        @drLacheheb
-                    </a>
-                </span>
             </div>
 </footer>
 </body>
