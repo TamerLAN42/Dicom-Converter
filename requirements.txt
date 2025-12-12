@@ -4,3 +4,5 @@ pydicom==2.4.3
 Pillow==10.0.0
 numpy==1.24.3
 reportlab==4.0.4
+pystray~=0.19.5
+pyinstaller~=6.17.0

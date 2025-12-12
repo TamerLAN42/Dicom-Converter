@@ -1,3 +1,4 @@
+# utils.py
 import os
 import numpy as np
 import pydicom
@@ -13,6 +14,7 @@ def convert_dicom_metadata_to_txt(dcm_filename, output_directory):
     except:
         return None
 
+    os.makedirs(output_directory, exist_ok=True)
     # Создаём текстовый файл
     base_name = os.path.basename(dcm_filename)
     if '.' in base_name:

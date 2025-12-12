@@ -1,12 +1,24 @@
 # app.py
 from flask import Flask, render_template, request, send_file, send_from_directory
 from utils import convert_dcm_to_jpg
+import webbrowser
+import threading
+import pystray
+from create_icon import create_programmatic_icon
 import io, zipfile
 import shutil
-import os
+import os, sys
 import tempfile
 
 app = Flask(__name__)
+
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(__file__)
+
+OUTPUTS_DIR = os.path.join(BASE_DIR, 'outputs')
+
 
 @app.route('/convert', methods=['POST'])
 def convert():
@@ -32,7 +44,7 @@ def convert():
         try:
             jpg = convert_dcm_to_jpg(
                 dcm,
-                output_directory='./outputs',
+                output_directory=OUTPUTS_DIR,
                 contrast_factor=contrast,
                 brightness_factor=brightness
             )
@@ -49,7 +61,7 @@ def convert():
 def results():
     """Показывает все конвертированные файлы"""
     files = []
-    output_dir = './outputs'
+    output_dir = OUTPUTS_DIR
 
     if os.path.exists(output_dir):
         for f in os.listdir(output_dir):
@@ -62,7 +74,7 @@ def results():
 @app.route('/download-all')
 def download_all():
     """Скачивает все файлы как ZIP"""
-    output_dir = './outputs'
+    output_dir = OUTPUTS_DIR
 
     if not os.path.exists(output_dir):
         return "No files", 404
@@ -93,11 +105,54 @@ def download_all():
 @app.route('/outputs/<filename>')
 def serve_output(filename):
     """Раздаёт файлы из папки outputs"""
-    return send_from_directory('./outputs', filename)
+    return send_from_directory(OUTPUTS_DIR, filename)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
+def on_exit(icon, item):
+    """Выход из приложения"""
+    icon.stop()
+    os._exit(0)
+
+
+def open_browser():
+    """Открыть браузер"""
+    webbrowser.open('http://localhost:5000')
+
+
+def setup_tray():
+    """Настройка иконки в трее"""
+    image = create_programmatic_icon()
+
+    icon = pystray.Icon(
+        "DCM Viewer",
+        image,
+        "DCM → JPG Converter\nhttp://localhost:5000",
+        menu=pystray.Menu(
+            pystray.MenuItem("Открыть в браузере", open_browser),
+            pystray.MenuItem("Выход", on_exit)
+        )
+    )
+    return icon
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Запускаем Flask в фоне
+    threading.Thread(
+        target=lambda: app.run(
+            port=5000,
+            debug=False,
+            use_reloader=False,
+            host='127.0.0.1'  # локально, не для сети
+        ),
+        daemon=True
+    ).start()
+
+    open_browser()
+
+    # Запускаем иконку в трее (блокирующий вызов)
+    icon = setup_tray()
+    icon.run()
