@@ -1,68 +1,64 @@
-# DICOM Converter
+# DICOM Web Converter
+**Based on**: [drLacheheb/Dicom-Converter](https://github.com/drLacheheb/Dicom-Converter)  
+**Credit to**: Original project by @drLacheheb
 
-Converts DICOM to image and PDF document , with optional settings for contrast and brightness adjustment.
+Веб-интерфейс для конвертации DICOM файлов в jpg/gif/txt в зависимости от типа.
 
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Dependencies](#dependencies)
-- [Customization](#customization)
-- [Contributing](#contributing)
-- [License](#license)
+## 🎯 Особенности
 
-## Overview
-This script converts DICOM images to PDF documents using Python. It leverages the PyDicom library to read DICOM files, and the Pillow and ReportLab libraries for image processing and PDF generation, respectively.
+- **Web UI на Flask** — интуитивный браузерный интерфейс вместо командной строки
+- **Поддержка метаданных** — автоматическое извлечение и сохранение DICOM метаданных
+- **Работа с 3D-DICOM** — расширенная поддержка объемных DICOM данных
+- **Фоновый режим** — иконка в системном трее для управления приложением
+- **Готовая сборка** — .exe файл для Windows без необходимости установки Python
 
-## Features
-- Converts DICOM images to JPEG format with optional contrast and brightness adjustment.
-- Supports conversion of JPEG images to PDF documents.
-- Provides flexibility for customizing PDF output settings.
+## 🚀 Запуск собранного приложения (для пользователей)
+1. Скачайте Dicom.Converter.exe из раздела [Releases](https://github.com/TamerLAN42/Dicom-Converter/releases)
+2. Разместите файл в удобной директории(папке) и запустите его. Появится иконка в системном трее(рядом с часами) и откроется окно в браузере с веб-интерфейсом.
+3. Для управления нажмите правой кнопкой мыши по иконке:  
+	- `Открыть в браузере` откроет новое окно интерфейса, 
+	- `Выход` закроет приложение.
 
-## Installation
-1. Clone the repository:
-
+## 📦 Установка/сборка (для разработчиков)
 ```bash
-git clone https://github.com/your_username/dicom-converter.git
-```
-
-2. Navigate to the project directory:
-
-```bash
-cd dicom-to-pdf
-```
-
-3. Install the required dependencies:
-
-```bash
+git clone https://github.com/TamerLAN42/Dicom-Converter.git
+cd Dicom-Converter
 pip install -r requirements.txt
-```
 
-## Usage
-1. Place your DICOM files in the `input_directory` folder.
-2. Run the script:
-
-```bash
+# Для запуска приложения -
 python app.py
+# Для сборки .exe через pyinstaller -
+python build.py
 ```
 
-3. Follow the prompts to convert DICOM images to PDF.
+## 🖥️ Использование веб-интерфейса
+1. Загрузите DICOM-файлы через кнопку "Выбрать файлы"
+2. По желанию настройте параметры яркости и контрастности
+3. Нажмите `Конвертировать` и дождитесь окончания обработки
+4. Откроется окно с предпросмотром результатов. Можете скачать все файлы как .zip архив или просматривать/скачивать их по отдельности.
 
-## Customization
-- **Input Directory**: Change the directory containing DICOM files by modifying the `input_directory` variable in `main.py`.
-- **Output Directory for JPEG Files**: Customize the output directory for JPEG files by adjusting the `jpeg_output_directory` variable in `main.py`.
-- **Output Directory for PDF File**: Modify the output directory for the PDF file by changing the `pdf_output_directory` variable in `main.py`.
-- **PDF File Name**: Adjust the name of the PDF file by modifying the `pdf_filename` variable in `main.py`.
+## ❓ Частые вопросы (FAQ)
+Q: Приложение запустилось, но браузер не открылся  
+A: Откройте вручную http://localhost:5000 или нажмите ПКМ на иконке в трее → "Открыть в браузере"
 
-## Dependencies
-- [PyDicom](https://github.com/pydicom/pydicom): for reading DICOM files.
-- [Pillow](https://github.com/python-pillow/Pillow): for image processing.
-- [ReportLab](https://bitbucket.org/rptlab/reportlab/src/default/): for PDF generation.
-- [NumPy](https://github.com/numpy/numpy): for numerical operations.
+Q: Файлы не конвертируются/ошибка  
+A: Убедитесь, что файлы имеют правильный DICOM формат. Некоторые DICOM могут быть зашифрованы или повреждены.
 
-## Contributing
-Contributions are welcome!.
+Q: Как полностью удалить приложение?  
+A: Удалите .exe файл и папку outputs создавшуюся рядом с файлом.
 
-## License
-just give me a star in github and use it as you like
+## ⚙️ Технические детали
+**Форматы на выходе:**
+- `.jpg` — для 2D DICOM изображений
+- `.gif` — для 3D/анимированных DICOM  
+- `.txt` — метаданные (Patient ID, Study Date, Modality и др.)
+
+**Стек технологий:**
+- Flask - Веб-интерфейс
+- PyDicom - работа с DICOM-форматом
+- Pillow - Обработка изображений
+- pystray - Иконка в системном трее
+- PyInstaller - Сборка .exe
+
+## 📄 Лицензия
+Используйте как хотите. Если проект был полезен, поставьте ⭐ на GitHub!
