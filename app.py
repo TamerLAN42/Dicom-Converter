@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, request, send_file, send_from_directory, after_this_request
+from flask import Flask, render_template, request, send_file, send_from_directory, redirect
 from utils import convert_dcm_to_jpg
 import webbrowser
 import threading
@@ -88,11 +88,6 @@ def download_all():
 
     memory_file.seek(0)
 
-    @after_this_request
-    def cleanup(response):
-        shutil.rmtree(output_dir, ignore_errors=True)
-        return response
-
     # Отправляем ZIP
     return send_file(
         memory_file,
@@ -100,6 +95,21 @@ def download_all():
         as_attachment=True,
         mimetype='application/zip'
     )
+
+
+@app.route('/cleanup')
+def cleanup():
+    """Очистка временных файлов"""
+    output_dir = OUTPUTS_DIR
+
+    if not os.path.exists(output_dir):
+        return "Нет файлов для очистки", 404
+
+    try:
+        shutil.rmtree(output_dir, ignore_errors=True)
+        return redirect('/results')
+    except Exception as e:
+        return f"❌ Ошибка при удалении: {str(e)}", 500
 
 @app.route('/outputs/<filename>')
 def serve_output(filename):
