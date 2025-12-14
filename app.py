@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, request, send_file, send_from_directory
+from flask import Flask, render_template, request, send_file, send_from_directory, after_this_request
 from utils import convert_dcm_to_jpg
 import webbrowser
 import threading
@@ -88,11 +88,10 @@ def download_all():
 
     memory_file.seek(0)
 
-    try:
-        shutil.rmtree(output_dir)
-        os.makedirs(output_dir, exist_ok=True)
-    except Exception as e:
-        print(f"Ошибка очистки outputs: {e}")
+    @after_this_request
+    def cleanup(response):
+        shutil.rmtree(output_dir, ignore_errors=True)
+        return response
 
     # Отправляем ZIP
     return send_file(
