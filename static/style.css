@@ -7,8 +7,11 @@
 
 body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
+    height: auto;
     padding: 20px;
+    box-sizing: border-box;
+    margin: 0;
+    overflow-y: auto;
 }
 
 .container {

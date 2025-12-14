@@ -107,9 +107,9 @@ def cleanup():
 
     try:
         shutil.rmtree(output_dir, ignore_errors=True)
-        return redirect('/results')
+        return redirect('/')
     except Exception as e:
-        return f"❌ Ошибка при удалении: {str(e)}", 500
+        return f"Ошибка при удалении: {str(e)}", 500
 
 @app.route('/outputs/<filename>')
 def serve_output(filename):
@@ -123,6 +123,14 @@ def index():
 
 def on_exit(icon, item):
     """Выход из приложения"""
+    output_dir = OUTPUTS_DIR
+    # Уходя, гасим свет
+    try:
+        shutil.rmtree(output_dir, ignore_errors=True)
+    except Exception as e:
+        print('Ошибка удаления:', e)
+
+    # Убираем иконку и закрываемся
     icon.stop()
     os._exit(0)
 
