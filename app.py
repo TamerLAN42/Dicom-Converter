@@ -9,6 +9,7 @@ import io, zipfile
 import shutil
 import os, sys
 import tempfile
+import socket
 
 app = Flask(__name__)
 
@@ -121,7 +122,7 @@ def index():
     return render_template('index.html')
 
 
-def on_exit(icon, item):
+def on_exit(icon):
     """Выход из приложения"""
     output_dir = OUTPUTS_DIR
     # Уходя, гасим свет
@@ -137,7 +138,7 @@ def on_exit(icon, item):
 
 def open_browser():
     """Открыть браузер"""
-    webbrowser.open('http://localhost:5000')
+    webbrowser.open('http://localhost:60232')
 
 
 def setup_tray():
@@ -147,7 +148,7 @@ def setup_tray():
     icon = pystray.Icon(
         "DCM Viewer",
         image,
-        "DCM → JPG Converter\nhttp://localhost:5000",
+        "DCM → JPG Converter\nhttp://localhost:60232",
         menu=pystray.Menu(
             pystray.MenuItem("Открыть в браузере", open_browser),
             pystray.MenuItem("Выход", on_exit)
@@ -155,21 +156,33 @@ def setup_tray():
     )
     return icon
 
+def start():
+    """Проверяем доступность порта, запускаем приложение, открываем браузер и создаём иконку в трее"""
+    try:
+        # Ловим ошибку о занятости порта
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind(('127.0.0.1', 60232))
+            sock.close()
+
+        # Если ещё живы - запускаем Flask в фоне
+        threading.Thread(
+            target=lambda: app.run(
+                port=60232,
+                debug=False,
+                use_reloader=False,
+                host='127.0.0.1'
+                ),
+               daemon=True
+            ).start()
+
+        open_browser()
+
+        icon = setup_tray()
+        icon.run()   # Блокирующий вызов. Дальше живут драконы
+    except:
+        # Если порт занят - считаем что приложение уже запущено, и пользователь хочет интерфейс
+        open_browser()
+
 
 if __name__ == '__main__':
-    # Запускаем Flask в фоне
-    threading.Thread(
-        target=lambda: app.run(
-            port=5000,
-            debug=False,
-            use_reloader=False,
-            host='127.0.0.1'  # локально, не для сети
-        ),
-        daemon=True
-    ).start()
-
-    open_browser()
-
-    # Запускаем иконку в трее (блокирующий вызов)
-    icon = setup_tray()
-    icon.run()
+    start()
